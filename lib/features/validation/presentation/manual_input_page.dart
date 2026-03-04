@@ -88,7 +88,12 @@ class _ManualInputPageState extends ConsumerState<ManualInputPage> {
     final textTheme = Theme.of(context).textTheme;
     final safePadding = MediaQuery.of(context).padding;
 
-    return Scaffold(
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: const SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: Brightness.light,
+      ),
+      child: Scaffold(
       backgroundColor: const Color(0xFFF7F9FB),
       // Sin AppBar — usamos header personalizado
       body: GestureDetector(
@@ -170,38 +175,144 @@ class _ManualInputPageState extends ConsumerState<ManualInputPage> {
                     const SizedBox(height: 24),
 
                     // ─── Denominación ─────────────────────────────
-                    _SectionLabel('DENOMINACIÓN'),
-                    const SizedBox(height: 10),
-                    SegmentedButton<int>(
-                      showSelectedIcon: false,
-                      segments: const [
-                        ButtonSegment(
-                          value: 10,
-                          label: Text('10 Bs'),
-                          icon: Icon(Icons.payments_outlined, size: 14),
+                    Row(
+                      children: [
+                        Container(
+                          width: 24,
+                          height: 24,
+                          alignment: Alignment.center,
+                          decoration: BoxDecoration(
+                            color: colors.primary,
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Text(
+                            '1',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
                         ),
-                        ButtonSegment(
-                          value: 20,
-                          label: Text('20 Bs'),
-                          icon: Icon(Icons.payments_outlined, size: 14),
-                        ),
-                        ButtonSegment(
-                          value: 50,
-                          label: Text('50 Bs'),
-                          icon: Icon(Icons.payments_outlined, size: 14),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            'Selecciona el corte del billete',
+                            style: textTheme.titleSmall?.copyWith(
+                              color: const Color(0xFF0D1B0F),
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
                         ),
                       ],
-                      selected: {_denomination},
-                      onSelectionChanged: (s) {
-                        HapticFeedback.selectionClick();
-                        setState(() => _denomination = s.first);
-                      },
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [10, 20, 50].map((denom) {
+                        final selected = _denomination == denom;
+                        return Expanded(
+                          child: Padding(
+                            padding: EdgeInsets.only(
+                              right: denom != 50 ? 10 : 0,
+                            ),
+                            child: GestureDetector(
+                              onTap: () {
+                                HapticFeedback.selectionClick();
+                                setState(() => _denomination = denom);
+                              },
+                              child: AnimatedContainer(
+                                duration: const Duration(milliseconds: 180),
+                                height: 72,
+                                decoration: BoxDecoration(
+                                  color: selected
+                                      ? colors.primary
+                                      : Colors.white,
+                                  borderRadius: BorderRadius.circular(14),
+                                  border: Border.all(
+                                    color: selected
+                                        ? colors.primary
+                                        : colors.outlineVariant,
+                                    width: selected ? 2 : 1,
+                                  ),
+                                  boxShadow: selected
+                                      ? [
+                                          BoxShadow(
+                                            color: colors.primary
+                                                .withValues(alpha: 0.25),
+                                            blurRadius: 12,
+                                            offset: const Offset(0, 4),
+                                          ),
+                                        ]
+                                      : null,
+                                ),
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Text(
+                                      '$denom',
+                                      style: TextStyle(
+                                        fontSize: 22,
+                                        fontWeight: FontWeight.w900,
+                                        color: selected
+                                            ? Colors.white
+                                            : const Color(0xFF0D1B0F),
+                                        height: 1.1,
+                                      ),
+                                    ),
+                                    Text(
+                                      'Bs',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w600,
+                                        color: selected
+                                            ? Colors.white
+                                                .withValues(alpha: 0.85)
+                                            : colors.onSurfaceVariant,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        );
+                      }).toList(),
                     ),
 
                     const SizedBox(height: 28),
 
                     // ─── Serie ───────────────────────────────────
-                    _SectionLabel('NÚMERO DE SERIE'),
+                    Row(
+                      children: [
+                        Container(
+                          width: 24,
+                          height: 24,
+                          alignment: Alignment.center,
+                          decoration: BoxDecoration(
+                            color: colors.primary,
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Text(
+                            '2',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            'Ingresa el número de serie',
+                            style: textTheme.titleSmall?.copyWith(
+                              color: const Color(0xFF0D1B0F),
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                     const SizedBox(height: 10),
                     Container(
                       decoration: BoxDecoration(
@@ -315,30 +426,13 @@ class _ManualInputPageState extends ConsumerState<ManualInputPage> {
           ],
         ),
       ),
+    ),
     );
   }
 }
 
 // ─── Widgets auxiliares ──────────────────────────────────────────────────────
 
-class _SectionLabel extends StatelessWidget {
-  const _SectionLabel(this.text);
-  final String text;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
-    return Text(
-      text,
-      style: TextStyle(
-        fontSize: 11,
-        fontWeight: FontWeight.w700,
-        color: colors.onSurfaceVariant,
-        letterSpacing: 1.2,
-      ),
-    );
-  }
-}
 
 class _SerialTipCard extends StatelessWidget {
   @override

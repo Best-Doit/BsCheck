@@ -61,11 +61,7 @@ class RulesRepositoryImpl implements RulesRepository {
     }
 
     final filtered = rules
-        .where(
-          (r) =>
-              r.denomination == serial.denomination &&
-              r.series == serial.series,
-        )
+        .where((r) => r.denomination == serial.denomination)
         .toList();
 
     if (filtered.isEmpty) {

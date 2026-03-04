@@ -21,6 +21,7 @@ class HistoryEntry {
 abstract class HistoryLocalDataSource {
   Future<void> addEntry(HistoryEntry entry);
   Future<List<HistoryEntry>> getEntries();
+  Stream<List<HistoryEntry>> watchEntries();
 }
 
 class HistoryLocalDataSourceImpl implements HistoryLocalDataSource {
@@ -45,6 +46,19 @@ class HistoryLocalDataSourceImpl implements HistoryLocalDataSource {
   @override
   Future<List<HistoryEntry>> getEntries() async {
     final box = await _openBox();
+    return _readEntriesFromBox(box);
+  }
+
+  @override
+  Stream<List<HistoryEntry>> watchEntries() async* {
+    final box = await _openBox();
+    yield _readEntriesFromBox(box);
+    await for (final _ in box.watch()) {
+      yield _readEntriesFromBox(box);
+    }
+  }
+
+  List<HistoryEntry> _readEntriesFromBox(Box<Map> box) {
     final entries = <HistoryEntry>[];
 
     for (final data in box.values) {

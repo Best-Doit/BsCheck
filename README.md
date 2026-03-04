@@ -1,184 +1,185 @@
 ## BsCheck — Verificador de billetes bolivianos
 
-**BsCheck** es una aplicación móvil Android **offline** para verificar si un billete boliviano pertenece a un rango de series inhabilitadas.
+**BsCheck** es una aplicación móvil Android **100% offline** para verificar si un billete boliviano pertenece a un rango de series inhabilitadas por el **Banco Central de Bolivia (BCB)**, basada en datos públicos de la Nueva Serie B.
 
-- **Plataforma**: Android (min. Android 8.0 / API 26)
-- **Framework**: Flutter
-- **Modo**: 100% offline (no requiere conexión)
-- **Estado**: MVP funcional
+- **Plataforma**: Android (mín. Android 8.0 / API 26)
+- **Framework**: Flutter 3 · Dart 3
+- **Application ID**: `bo.bestdoit.bscheck`
+- **Versión**: 1.0.0
+- **Repositorio**: [github.com/Best-Doit/BsCheck](https://github.com/Best-Doit/BsCheck)
+- **Licencia**: Apache 2.0
 
 ---
 
 ## Características principales
 
-- **Verificación de billetes bolivianos**:
-  - Cortes soportados en el MVP: **10 Bs, 20 Bs, 50 Bs**
-  - Serie soportada en el MVP: **Serie B**
+- **Cortes soportados**: 10 Bs · 20 Bs · 50 Bs
+- **Serie soportada**: Serie B (Nueva Serie BCB)
 - **Métodos de ingreso**:
-  - Escaneo con cámara (OCR usando Google ML Kit).
-  - Ingreso manual de la serie numérica.
-- **Resultados claros**:
-  - **VÁLIDO**: la serie no está en rangos inhabilitados.
-  - **INHABILITADO**: la serie sí pertenece a un rango inhabilitado.
-  - **NO RECONOCIDO**: el texto leído/ingresado no se puede interpretar como serie válida.
-- **Historial local**:
-  - Guarda consultas con fecha/hora, serie, resultado y corte.
-  - Solo en el dispositivo (no se envía a ningún servidor).
+  - Escaneo con cámara (OCR — Google ML Kit)
+  - Ingreso manual de la serie numérica
+- **Resultados**:
+  - ✅ **VÁLIDO** — la serie no está en rangos inhabilitados
+  - ⛔ **INHABILITADO** — la serie pertenece a un rango inhabilitado
+  - ❓ **NO RECONOCIDO** — el texto no se puede interpretar como serie válida
+- **Historial local**: guarda consultas (serie, corte, resultado, fecha/hora) solo en el dispositivo
+- **Sin internet, sin registro, sin servidores externos**
 
 ---
 
-## Arquitectura y diseño
+## Rangos de series inhabilitadas (verificados)
 
-- **Arquitectura**: Clean Architecture (simplificada)
-  - `presentation`: pantallas, widgets y lógica de UI.
-  - `application`: casos de uso (`ValidateSerialUseCase`) y providers.
-  - `domain`: entidades y contratos de repositorio.
-  - `data`: data sources (assets, Hive) y repositorios concretos.
-- **Carpetas principales**:
-  - `lib/core`: constantes y utilidades.
-  - `lib/features/validation`: flujo de validación de billetes.
-  - `lib/features/history`: manejo de historial local.
-  - `assets/rules/rules_v1.json`: archivo de reglas (rangos de series inhabilitadas).
+| Denominación | Rangos | Fuente |
+|---|---|---|
+| **10 Bs** | 10 rangos (67.250.001 – 92.250.000) | BCB — confirmado |
+| **20 Bs** | 16 rangos (87.280.145 – 120.950.000) | BCB — confirmado |
+| **50 Bs** | 12 rangos (77.100.001 – 109.850.000) | BCB — confirmado |
 
-Más detalles funcionales están documentados en:
-
-- `documentacion/planning/` (visión de producto, alcance MVP, requisitos).
-- `documentacion/development/` (arquitectura técnica, estructura y modelo de datos).
-- `documentacion/design/` (UI del MVP).
-- `documentacion/progress/` (historial de sprints y avances).
+Los rangos están en `assets/rules/rules_v1.json` y se validan mediante **búsqueda binaria** en memoria local.
 
 ---
 
-## Flujo de uso en la app
+## Arquitectura
 
-### 1. Pantalla Home
+```
+lib/
+├── main.dart                        # Tema global Material 3, inicialización
+├── features/
+│   ├── navigation/presentation/     # MainShellPage (NavigationBar)
+│   ├── onboarding/presentation/     # OnboardingPage (primera vez)
+│   ├── validation/
+│   │   ├── presentation/            # HomePage, ScanPage, ManualInputPage, ResultPage
+│   │   ├── application/             # ValidateSerialUseCase, providers (Riverpod)
+│   │   ├── domain/                  # Entidades (BanknoteSerial, ValidationResult, RuleRange)
+│   │   └── data/                    # RulesRepositoryImpl, RulesLocalDataSource
+│   └── history/
+│       ├── presentation/            # HistoryPage
+│       └── data/                    # HistoryLocalDataSourceImpl (Hive)
+└── presentation/widgets/            # AppButton, HistoryListItem
+assets/
+└── rules/rules_v1.json              # Rangos de series inhabilitadas
+test/
+└── validation_ranges_test.dart      # 33 tests — 10/20/50 Bs + edge cases
+```
 
-Al abrir BsCheck verás tres acciones principales:
-
-- **Escanear billete**  
-  Abre la cámara para capturar la serie del billete y validarla.
-
-- **Ingresar serie**  
-  Permite escribir manualmente la serie numérica del billete.
-
-- **Historial**  
-  Muestra las últimas verificaciones realizadas en este dispositivo.
-
-### 2. Escanear billete (OCR)
-
-1. Toca **“Escanear billete”**.
-2. Alinea la serie del billete dentro del recuadro en pantalla.
-3. Toca **“Capturar y validar”**.
-4. La app:
-   - Lee la imagen con la cámara.
-   - Aplica OCR (Google ML Kit).
-   - Extrae candidatos numéricos (regex `[0-9]{7,9}`).
-   - Escoge el más probable y lo valida contra los rangos locales.
-5. Verás una pantalla de **Resultado** con:
-   - Estado (VÁLIDO / INHABILITADO / NO RECONOCIDO).
-   - Serie detectada.
-   - Corte y serie letra (en el MVP, serie fija “B”).
-
-### 3. Ingresar serie manualmente
-
-1. Toca **“Ingresar serie”**.
-2. Selecciona el **corte**: 10 Bs, 20 Bs o 50 Bs.
-3. Escribe la serie numérica (ejemplo: `87280145`).
-4. Toca **“Validar”**.
-5. La app convierte el texto a número, lo valida offline y muestra la pantalla de resultado.
-
-### 4. Historial
-
-1. Toca **“Historial”** en la pantalla Home.
-2. Verás una lista con:
-   - **Serie** (o “(sin serie)” si no se reconoció).
-   - **Fecha y hora** de la consulta.
-   - **Corte** y **serie letra**.
-   - **Resultado** con color:
-     - Verde: VÁLIDO.
-     - Rojo: INHABILITADO.
-     - Gris: NO RECONOCIDO.
-
-Todo el historial se guarda **solo en el dispositivo**, usando Hive.
+**Stack técnico**:
+- `flutter_riverpod` — gestión de estado
+- `google_mlkit_text_recognition` — OCR
+- `camera` — acceso a cámara
+- `hive` / `hive_flutter` — almacenamiento local
+- `url_launcher` — apertura de links externos
 
 ---
 
-## Instalación y actualizaciones (APK desde GitHub)
+## Flujo de uso
 
-Este proyecto está pensado como **open source** y se puede distribuir sin Play Store.
+### Pantalla Home
+- Banner **"Serie B · Banco Central de Bolivia"**
+- Botón principal: **Escanear billete** (recomendado)
+- Botones secundarios: **Manual** · **Historial**
+- Botón **Info** (ícono ℹ): abre diálogo con descripción, características y link a GitHub
 
-### 1. Requisitos en el teléfono
+### Escanear billete (OCR)
+1. Selecciona el **corte** del billete (10 / 20 / 50 Bs) — botones grandes, táctiles
+2. Alinea la serie del billete dentro del marco de la cámara
+3. Toca **"Capturar y validar"**
+4. La app aplica OCR, extrae la serie y valida offline
 
-- Android 8.0 (API 26) o superior.
-- Activar la opción para instalar apps desde fuentes externas:
-  - En muchas versiones:  
-    `Ajustes → Seguridad → Instalar apps desconocidas`  
-    Permitir para el navegador / gestor de archivos que usarás.
+### Ingresar serie manualmente
+1. Selecciona el **corte** del billete
+2. Escribe la serie (7–9 dígitos)
+3. Toca **"Validar billete"**
 
-### 2. Instalación inicial (usuario final)
-
-1. Ve a la página de **Releases** del repositorio de BsCheck en GitHub.
-2. Descarga el archivo `app-release.apk` de la última versión.
-3. Abre el archivo APK descargado en tu teléfono.
-4. Acepta los permisos solicitados (cámara) cuando se te pidan.
-
-La app quedará instalada como **BsCheck** en tu lista de aplicaciones.
-
-### 3. Actualizar a una nueva versión
-
-Cuando se publique una nueva versión:
-
-1. Entra de nuevo a la sección de **Releases** en GitHub.
-2. Descarga el nuevo `app-release.apk` (misma app, versión superior).
-3. Instala el APK encima de la versión anterior:
-   - Android detectará que es la **misma app** (misma firma).
-   - Actualizará manteniendo datos locales (incluido historial).
-
-> Nota: no desinstales la app si quieres conservar el historial; simplemente instala la nueva versión encima.
-
-## Seguridad y privacidad
-
-- La app **no** recopila datos personales.
-- Solo almacena en el dispositivo:
-  - Series de billetes verificadas.
-  - Fecha/hora de la verificación.
-  - Resultado (VÁLIDO / INHABILITADO / NO RECONOCIDO).
-- No se envían datos a servidores externos.
-
-**Aviso importante** (definido en el PRD):
-
-> Esta aplicación no es oficial del Banco Central de Bolivia.  
-> La información se basa en datos públicos.
-
-Se recomienda mostrar este aviso dentro de la propia app (por ejemplo, en un diálogo “Acerca de”).
+### Historial
+- Agrupado por fecha (Hoy / Ayer / Esta semana / mes)
+- Estadísticas rápidas: Válidos · Inhabilitados · Total
+- Badge de color por resultado
 
 ---
 
-## Contribuir
+## Instalación desde GitHub (sin Play Store)
 
-Como proyecto open source, se aceptan mejoras y correcciones:
+Para dispositivos **sin Google Play** o instalación directa:
 
-- Issues con:
-  - Bugs detectados.
-  - Problemas con OCR en ciertos dispositivos.
-  - Rango de reglas a actualizar.
-- Pull Requests con:
-  - Mejoras de UI/UX.
-  - Nuevas reglas de series (manteniendo formato JSON).
-  - Optimizaciones de performance o arquitectura.
+### Requisitos
+- Android 8.0 (API 26) o superior
+- Activar: `Ajustes → Seguridad → Instalar apps desconocidas`
 
-Por favor, revisa la documentación en `documentacion/` (especialmente `planning/` y `development/`) antes de proponer cambios que afecten al comportamiento principal.
+### Instalar
+1. Ve a [Releases](https://github.com/Best-Doit/BsCheck/releases)
+2. Descarga `app-release.apk` de la versión más reciente
+3. Abre el APK en tu teléfono y acepta los permisos
+
+### Actualizar
+- Descarga el nuevo `app-release.apk` e instala encima del anterior
+- No desinstales — se conserva el historial local
 
 ---
 
-## Licencia y marca
+## Desarrollo y contribución
 
-- El código de BsCheck se publica bajo la licencia **Apache 2.0** (ver archivo `LICENSE`).
-- Están permitidos los forks y modificaciones respetando la licencia.
-- **No está permitido** usar el nombre **“BsCheck”**, el logo original o presentarse como la app oficial de Best-Doit o del Banco Central de Bolivia en apps derivadas, salvo autorización expresa.
+### Requisitos
+- Flutter SDK ≥ 3.11
+- Android SDK (compileSdk 36, minSdk 26)
 
-Si publicas un fork:
+### Comandos principales
+```bash
+# Instalar dependencias
+flutter pub get
 
-- Cambia **nombre**, **icono** y **descripciones** para dejar claro que es un proyecto derivado.
-- Incluye crédito a este repositorio original (`Best-Doit/BsCheck` en GitHub).
+# Correr en debug
+flutter run
 
+# Ejecutar tests (33 tests)
+flutter test
+
+# Análisis estático
+flutter analyze
+
+# Build release (Play Store)
+flutter build appbundle --release
+
+# Build APK (distribución directa)
+flutter build apk --release
+```
+
+### Estructura de reglas
+El archivo `assets/rules/rules_v1.json` tiene este formato:
+```json
+{
+  "version": 1,
+  "currency": "BOB",
+  "rules": [
+    { "denomination": 10, "series": "B", "start": 67250001, "end": 67700000 },
+    ...
+  ]
+}
+```
+Para añadir nuevos rangos: agregar entradas con `denomination`, `series`, `start`, `end`.
+
+### Contribuir
+- **Issues**: bugs, problemas OCR, rangos a actualizar
+- **Pull Requests**: mejoras UI/UX, nuevas reglas, optimizaciones
+- Revisar `documentacion/` antes de proponer cambios al comportamiento principal
+
+---
+
+## Privacidad y seguridad
+
+- La app **no** recopila datos personales
+- Todo el historial se guarda **solo en el dispositivo** (Hive local)
+- No hay conexiones a servidores externos
+- Código abierto y auditable
+
+> **Aviso**: esta aplicación no es oficial del Banco Central de Bolivia.  
+> La información se basa en datos públicos y no constituye asesoramiento financiero.
+
+---
+
+## Licencia
+
+Apache 2.0 — ver archivo `LICENSE`.
+
+Forks permitidos respetando la licencia. **No está permitido** usar el nombre "BsCheck", el logo original ni presentarse como app oficial de Best-Doit o del BCB en apps derivadas sin autorización expresa.
+
+Crédito a [Best-Doit/BsCheck](https://github.com/Best-Doit/BsCheck) en proyectos derivados.

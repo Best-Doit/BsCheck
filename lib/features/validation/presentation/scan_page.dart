@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart';
 
@@ -152,21 +153,7 @@ class _ScanPageState extends ConsumerState<ScanPage> {
       final inputImage = InputImage.fromFilePath(file.path);
       final recognizedText = await _textRecognizer.processImage(inputImage);
       final extracted = _extractScanData(recognizedText);
-      if (!mounted) return;
-
-      setState(() {
-        _isBusy = false;
-      });
-
-      final confirmed = await _confirmDetectedData(extracted);
-      if (confirmed == null) return;
-
-      if (!mounted) return;
-      setState(() {
-        _isBusy = true;
-      });
-
-      await _validateAndShowResult(confirmed.serial, confirmed.series ?? 'B');
+      await _validateAndShowResult(extracted.serial, extracted.series ?? 'B');
     } catch (_) {
       if (!mounted) return;
       setState(() {
@@ -184,78 +171,6 @@ class _ScanPageState extends ConsumerState<ScanPage> {
         });
       }
     }
-  }
-
-  Future<_ScanData?> _confirmDetectedData(_ScanData extracted) async {
-    return showModalBottomSheet<_ScanData>(
-      context: context,
-      isDismissible: true,
-      showDragHandle: true,
-      builder: (context) {
-        final colors = Theme.of(context).colorScheme;
-        final serial = extracted.serial ?? '(no detectado)';
-        final series = extracted.series ?? '(no detectada / no permitida)';
-        final canValidate =
-            extracted.serial != null && extracted.series != null;
-
-        return Padding(
-          padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const Text(
-                'Verifica detección OCR',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
-              ),
-              const SizedBox(height: 10),
-              Container(
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: colors.surfaceContainerHighest,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('Serie letra: $series'),
-                    const SizedBox(height: 4),
-                    Text('Número: $serial'),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 14),
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton(
-                      onPressed: () => Navigator.of(context).pop(null),
-                      child: const Text('Repetir'),
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: FilledButton(
-                      onPressed: canValidate
-                          ? () => Navigator.of(context).pop(extracted)
-                          : null,
-                      child: const Text('Validar'),
-                    ),
-                  ),
-                ],
-              ),
-              if (!canValidate) ...[
-                const SizedBox(height: 8),
-                const Text(
-                  'Solo se permite la serie B. Repite la captura.',
-                  style: TextStyle(fontSize: 12),
-                ),
-              ],
-            ],
-          ),
-        );
-      },
-    );
   }
 
   Future<void> _validateAndShowResult(String? candidate, String series) async {
@@ -362,10 +277,7 @@ class _ScanPageState extends ConsumerState<ScanPage> {
   _ScanData _extractScanData(RecognizedText recognizedText) {
     final serial = _extractSerialCandidate(recognizedText);
     final series = _extractSeriesCandidate(recognizedText, serial: serial);
-    final normalizedSeries = series != null && _allowedSeries.contains(series)
-        ? series
-        : null;
-    return _ScanData(serial: serial, series: normalizedSeries);
+    return _ScanData(serial: serial, series: series);
   }
 
   String? _extractSeriesCandidate(
@@ -424,14 +336,21 @@ class _ScanPageState extends ConsumerState<ScanPage> {
     final textTheme = Theme.of(context).textTheme;
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0D1B0F),
+      backgroundColor: const Color(0xFFF7F9FB),
       appBar: AppBar(
-        backgroundColor: const Color(0xFF0D1B0F),
-        foregroundColor: Colors.white,
+        backgroundColor: const Color(0xFFF7F9FB),
+        foregroundColor: const Color(0xFF0D1B0F),
         surfaceTintColor: Colors.transparent,
+        systemOverlayStyle: const SystemUiOverlayStyle(
+          statusBarColor: Colors.transparent,
+          statusBarIconBrightness: Brightness.dark,
+        ),
         title: const Text(
           'Escanear billete',
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700),
+          style: TextStyle(
+            color: Color(0xFF0D1B0F),
+            fontWeight: FontWeight.w800,
+          ),
         ),
         actions: [
           Padding(
@@ -446,19 +365,32 @@ class _ScanPageState extends ConsumerState<ScanPage> {
                 ),
                 decoration: BoxDecoration(
                   color: _flashMode == FlashMode.off
-                      ? Colors.white.withValues(alpha: 0.12)
-                      : colors.primary.withValues(alpha: 0.9),
+                      ? colors.outlineVariant.withValues(alpha: 0.3)
+                      : colors.primary.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(999),
+                  border: Border.all(
+                    color: _flashMode == FlashMode.off
+                        ? colors.outlineVariant
+                        : colors.primary.withValues(alpha: 0.4),
+                  ),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(_flashIcon(_flashMode), size: 16, color: Colors.white),
+                    Icon(
+                      _flashIcon(_flashMode),
+                      size: 16,
+                      color: _flashMode == FlashMode.off
+                          ? colors.onSurfaceVariant
+                          : colors.primary,
+                    ),
                     const SizedBox(width: 6),
                     Text(
                       _flashLabel(_flashMode),
-                      style: const TextStyle(
-                        color: Colors.white,
+                      style: TextStyle(
+                        color: _flashMode == FlashMode.off
+                            ? colors.onSurfaceVariant
+                            : colors.primary,
                         fontWeight: FontWeight.w700,
                         fontSize: 13,
                       ),
@@ -474,48 +406,113 @@ class _ScanPageState extends ConsumerState<ScanPage> {
         children: [
           // ─── Selector de corte ────────────────────────────────
           Container(
-            color: const Color(0xFF0D1B0F),
-            padding: const EdgeInsets.fromLTRB(16, 4, 16, 14),
+            color: const Color(0xFFF7F9FB),
+            padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'Denominación del billete',
-                  style: textTheme.labelMedium?.copyWith(
-                    color: Colors.white.withValues(alpha: 0.55),
-                    letterSpacing: 0.5,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                SegmentedButton<int>(
-                  style: SegmentedButton.styleFrom(
-                    backgroundColor: Colors.white.withValues(alpha: 0.08),
-                    foregroundColor: Colors.white.withValues(alpha: 0.7),
-                    selectedForegroundColor: Colors.white,
-                    selectedBackgroundColor: colors.primary,
-                    side: BorderSide(
-                      color: Colors.white.withValues(alpha: 0.18),
+                // Instrucción principal
+                Row(
+                  children: [
+                    Container(
+                      width: 24,
+                      height: 24,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: colors.primary,
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Text(
+                        '1',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
                     ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        'Selecciona el corte del billete a escanear',
+                        style: textTheme.titleSmall?.copyWith(
+                          color: const Color(0xFF0D1B0F),
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
                     ),
-                    textStyle: const TextStyle(
-                      fontWeight: FontWeight.w700,
-                      fontSize: 13,
-                    ),
-                  ),
-                  showSelectedIcon: false,
-                  segments: const [
-                    ButtonSegment(value: 10, label: Text('10 Bs')),
-                    ButtonSegment(value: 20, label: Text('20 Bs')),
-                    ButtonSegment(value: 50, label: Text('50 Bs')),
                   ],
-                  selected: {_denomination},
-                  onSelectionChanged: _isBusy
-                      ? null
-                      : (newSelection) {
-                          setState(() => _denomination = newSelection.first);
-                        },
+                ),
+                const SizedBox(height: 12),
+                // Botones de denominación grandes
+                Row(
+                  children: [10, 20, 50].map((denom) {
+                    final selected = _denomination == denom;
+                    return Expanded(
+                      child: Padding(
+                        padding: EdgeInsets.only(
+                          right: denom != 50 ? 10 : 0,
+                        ),
+                        child: GestureDetector(
+                          onTap: _isBusy
+                              ? null
+                              : () => setState(() => _denomination = denom),
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 180),
+                            height: 72,
+                            decoration: BoxDecoration(
+                              color: selected
+                                  ? colors.primary
+                                  : Colors.white,
+                              borderRadius: BorderRadius.circular(14),
+                              border: Border.all(
+                                color: selected
+                                    ? colors.primary
+                                    : colors.outlineVariant,
+                                width: selected ? 2 : 1,
+                              ),
+                              boxShadow: selected
+                                  ? [
+                                      BoxShadow(
+                                        color: colors.primary
+                                            .withValues(alpha: 0.25),
+                                        blurRadius: 12,
+                                        offset: const Offset(0, 4),
+                                      ),
+                                    ]
+                                  : null,
+                            ),
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text(
+                                  '$denom',
+                                  style: TextStyle(
+                                    fontSize: 22,
+                                    fontWeight: FontWeight.w900,
+                                    color: selected
+                                        ? Colors.white
+                                        : const Color(0xFF0D1B0F),
+                                    height: 1.1,
+                                  ),
+                                ),
+                                Text(
+                                  'Bs',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                    color: selected
+                                        ? Colors.white.withValues(alpha: 0.85)
+                                        : colors.onSurfaceVariant,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    );
+                  }).toList(),
                 ),
               ],
             ),
@@ -553,12 +550,22 @@ class _ScanPageState extends ConsumerState<ScanPage> {
                             ),
                     ),
                   )
-                : ClipRRect(
-                    borderRadius: BorderRadius.zero,
+                : ClipRect(
                     child: Stack(
                       fit: StackFit.expand,
                       children: [
-                        CameraPreview(controller),
+                        // FittedBox.cover respeta el aspect ratio del sensor
+                        // y rellena el área sin aplastar la imagen.
+                        SizedBox.expand(
+                          child: FittedBox(
+                            fit: BoxFit.cover,
+                            child: SizedBox(
+                              width: controller.value.previewSize!.height,
+                              height: controller.value.previewSize!.width,
+                              child: CameraPreview(controller),
+                            ),
+                          ),
+                        ),
                         _ScannerOverlayFrame(primaryColor: colors.primary),
                       ],
                     ),
@@ -567,19 +574,42 @@ class _ScanPageState extends ConsumerState<ScanPage> {
 
           // ─── Botón de captura ─────────────────────────────────
           Container(
-            color: const Color(0xFF0D1B0F),
-            padding: const EdgeInsets.fromLTRB(20, 16, 20, 28),
+            color: const Color(0xFFF7F9FB),
+            padding: const EdgeInsets.fromLTRB(20, 14, 20, 28),
             child: Column(
               children: [
-                Text(
-                  'Alinea la serie del billete dentro del marco',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.white.withValues(alpha: 0.5),
-                  ),
+                // Paso 2
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Container(
+                      width: 24,
+                      height: 24,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: colors.primary,
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Text(
+                        '2',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Alinea la serie dentro del marco y captura',
+                      style: textTheme.bodySmall?.copyWith(
+                        color: colors.onSurfaceVariant,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 14),
+                const SizedBox(height: 12),
                 SizedBox(
                   width: double.infinity,
                   height: 54,
@@ -628,8 +658,6 @@ class _ScanData {
   final String? serial;
   final String? series;
 }
-
-const _allowedSeries = {'B'};
 
 /// Overlay con esquinas estilo fintech + zona central transparente.
 class _ScannerOverlayFrame extends StatelessWidget {

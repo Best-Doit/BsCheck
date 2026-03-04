@@ -17,10 +17,18 @@ class _OnboardingPageState extends State<OnboardingPage> {
 
   static const _pages = [
     _OnboardingData(
-      icon: Icons.wifi_off_rounded,
-      title: '100% sin conexión',
+      icon: Icons.volunteer_activism_rounded,
+      title: 'A las familias afectadas',
       description:
-          'Verifica billetes bolivianos en cualquier lugar, sin internet. Ideal para mercados, tiendas y uso en calle.',
+          'BsCheck expresa sus más sinceras condolencias a todas las familias que sufrieron la tragedia del siniestro aéreo.\n\n'
+          'Esta aplicación permite a comerciantes, tiendas de barrio y todas las personas verificar rápidamente series inhabilitadas por el Banco Central de Bolivia, incluso sin acceso a internet.',
+      isCondolence: true,
+    ),
+    _OnboardingData(
+      icon: Icons.account_balance_rounded,
+      title: 'Serie B · BCB',
+      description:
+          'Verifica series inhabilitadas de la nueva Serie B según las resoluciones oficiales del Banco Central de Bolivia. Sin internet, sin registro, de forma instantánea.',
     ),
     _OnboardingData(
       icon: Icons.document_scanner_rounded,
@@ -155,12 +163,14 @@ class _OnboardingData {
     required this.title,
     required this.description,
     this.isLast = false,
+    this.isCondolence = false,
   });
 
   final IconData icon;
   final String title;
   final String description;
   final bool isLast;
+  final bool isCondolence;
 }
 
 class _OnboardingScreen extends StatelessWidget {
@@ -172,6 +182,64 @@ class _OnboardingScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
+
+    if (data.isCondolence) {
+      return SingleChildScrollView(
+        padding: const EdgeInsets.fromLTRB(28, 48, 28, 24),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            // Icono con fondo oscuro suave
+            Container(
+              width: 110,
+              height: 110,
+              decoration: BoxDecoration(
+                color: const Color(0xFF1B1B2F),
+                borderRadius: BorderRadius.circular(36),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.18),
+                    blurRadius: 24,
+                    offset: const Offset(0, 10),
+                  ),
+                ],
+              ),
+              child: Icon(data.icon, size: 54, color: Colors.white),
+            ),
+            const SizedBox(height: 32),
+            // Título en negro profundo
+            Text(
+              data.title,
+              textAlign: TextAlign.center,
+              style: textTheme.headlineSmall?.copyWith(
+                fontWeight: FontWeight.w800,
+                color: const Color(0xFF0D1B0F),
+              ),
+            ),
+            const SizedBox(height: 20),
+            // Mensaje de condolencias
+            Container(
+              padding: const EdgeInsets.all(18),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: colors.outlineVariant.withValues(alpha: 0.6),
+                ),
+              ),
+              child: Text(
+                data.description,
+                textAlign: TextAlign.center,
+                style: textTheme.bodyMedium?.copyWith(
+                  color: colors.onSurfaceVariant,
+                  height: 1.7,
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(32, 48, 32, 24),

@@ -32,10 +32,7 @@ class _ResultPageState extends State<ResultPage>
       vsync: this,
       duration: const Duration(milliseconds: 420),
     );
-    _fadeAnim = CurvedAnimation(
-      parent: _animController,
-      curve: Curves.easeOut,
-    );
+    _fadeAnim = CurvedAnimation(parent: _animController, curve: Curves.easeOut);
     _slideAnim = Tween<Offset>(
       begin: const Offset(0, 0.12),
       end: Offset.zero,
@@ -58,7 +55,7 @@ class _ResultPageState extends State<ResultPage>
       heroBg,
       iconData,
       statusLabel,
-      description,
+      baseDescription,
     ) = switch (widget.result.status) {
       ValidationStatus.disabled => (
         const Color(0xFFD32F2F),
@@ -72,7 +69,7 @@ class _ResultPageState extends State<ResultPage>
         const Color(0xFFF0FFF4),
         Icons.check_circle_rounded,
         'VÁLIDO',
-        'La serie no se encuentra en los rangos de billetes inhabilitados conocidos.',
+        'El número de serie no se encuentra en rangos inhabilitados conocidos.',
       ),
       ValidationStatus.notRecognized => (
         const Color(0xFF5D4037),
@@ -82,6 +79,12 @@ class _ResultPageState extends State<ResultPage>
         'No fue posible interpretar la serie. Ingresa los dígitos manualmente para verificar.',
       ),
     };
+
+    final description =
+        widget.result.status == ValidationStatus.valid &&
+            widget.series.toUpperCase() != 'B'
+        ? 'Billete válido. Pertenece a otra serie.'
+        : baseDescription;
 
     return Scaffold(
       backgroundColor: heroBg,
@@ -185,8 +188,10 @@ class _ResultPageState extends State<ResultPage>
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('Detalle de verificación',
-                              style: textTheme.titleLarge),
+                          Text(
+                            'Detalle de verificación',
+                            style: textTheme.titleLarge,
+                          ),
                           const SizedBox(height: 20),
                           _DetailRow(
                             icon: Icons.tag_rounded,
@@ -202,12 +207,6 @@ class _ResultPageState extends State<ResultPage>
                             icon: Icons.payments_outlined,
                             label: 'Denominación',
                             value: '${widget.denomination} Bolivianos',
-                          ),
-                          const _Divider(),
-                          _DetailRow(
-                            icon: Icons.sort_by_alpha_rounded,
-                            label: 'Serie letra',
-                            value: widget.series,
                           ),
                           const SizedBox(height: 32),
                           AppPrimaryButton(
@@ -287,9 +286,7 @@ class _DetailRow extends StatelessWidget {
                 Text(
                   value,
                   style: textTheme.titleMedium?.copyWith(
-                    color: highlight
-                        ? highlightColor
-                        : colors.onSurface,
+                    color: highlight ? highlightColor : colors.onSurface,
                     fontWeight: highlight ? FontWeight.w800 : FontWeight.w600,
                     fontSize: highlight ? 18 : 15,
                     letterSpacing: highlight ? 1.2 : 0,

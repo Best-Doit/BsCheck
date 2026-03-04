@@ -8,8 +8,8 @@ final historyDataSourceProvider = Provider<HistoryLocalDataSource>(
   (ref) => HistoryLocalDataSourceImpl(),
 );
 
-final historyEntriesProvider = FutureProvider(
-  (ref) => ref.read(historyDataSourceProvider).getEntries(),
+final historyEntriesProvider = StreamProvider.autoDispose<List<HistoryEntry>>(
+  (ref) => ref.read(historyDataSourceProvider).watchEntries(),
 );
 
 class HistoryPage extends ConsumerWidget {
@@ -147,8 +147,7 @@ class HistoryPage extends ConsumerWidget {
 
                       return HistoryListItem(
                         serial: entry.serial,
-                        metadata:
-                            '$timeText · ${entry.denomination} Bs · Serie ${entry.series}',
+                        metadata: '$timeText · ${entry.denomination} Bs',
                         badgeLabel: label,
                         badgeColor: color,
                       );

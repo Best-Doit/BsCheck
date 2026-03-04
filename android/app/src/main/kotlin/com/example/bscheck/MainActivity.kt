@@ -1,4 +1,4 @@
-package com.example.bscheck
+package bo.bestdoit.bscheck
 
 import io.flutter.embedding.android.FlutterActivity
 
