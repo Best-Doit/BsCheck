@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../validation/application/validation_providers.dart';
 import '../../validation/domain/entities/validation_result.dart';
+import '../../history/data/history_local_datasource.dart';
 import 'result_page.dart';
 
 class ManualInputPage extends ConsumerStatefulWidget {
@@ -48,6 +49,19 @@ class _ManualInputPageState extends ConsumerState<ManualInputPage> {
         denomination: _denomination,
         series: 'B',
       );
+
+      final history = HistoryEntry(
+        timestamp: DateTime.now(),
+        serial: result.serial,
+        denomination: _denomination,
+        series: 'B',
+        resultType: switch (result.status) {
+          ValidationStatus.disabled => HistoryResultType.disabled,
+          ValidationStatus.valid => HistoryResultType.valid,
+          ValidationStatus.notRecognized => HistoryResultType.notRecognized,
+        },
+      );
+      await HistoryLocalDataSourceImpl().addEntry(history);
 
       if (!mounted) return;
 

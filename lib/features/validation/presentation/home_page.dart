@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
+import '../../history/presentation/history_page.dart';
 import 'manual_input_page.dart';
+import 'scan_page.dart';
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
@@ -26,7 +28,11 @@ class HomePage extends StatelessWidget {
               const SizedBox(height: 32),
               FilledButton(
                 onPressed: () {
-                  // TODO: navegar a pantalla de escaneo (sprint 03).
+                  Navigator.of(context).push(
+                    MaterialPageRoute<void>(
+                      builder: (_) => const ScanPage(),
+                    ),
+                  );
                 },
                 child: const Text('Escanear billete'),
               ),
@@ -44,7 +50,11 @@ class HomePage extends StatelessWidget {
               const SizedBox(height: 12),
               TextButton(
                 onPressed: () {
-                  // TODO: navegar a historial (sprint 04).
+                  Navigator.of(context).push(
+                    MaterialPageRoute<void>(
+                      builder: (_) => const HistoryPage(),
+                    ),
+                  );
                 },
                 child: const Text('Historial'),
               ),

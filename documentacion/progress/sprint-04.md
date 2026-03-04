@@ -1,6 +1,6 @@
 # Sprint 04 — UI, historial y pulido MVP
 
-**Estado**: Planned  
+**Estado**: In progress  
 **Periodo**: pendiente de definir
 
 ## Objetivo del sprint
@@ -9,17 +9,17 @@ Completar la **UI del MVP**, el **historial local** y ajustes de performance/UX 
 
 ## Alcance
 
-- [ ] Pantalla Home
+- [x] Pantalla Home
   - [ ] Botones principales: **Scan banknote**, **Enter serial**, **History**.
   - [ ] Diseño simple, con buen contraste, pensando en uso rápido.
 - [x] Pantalla de ingreso manual
   - [ ] Campo numérico con validaciones básicas (7–9 dígitos).
   - [ ] Botón **Validate** que usa el caso de uso de validación.
   - [ ] Manejo claro de errores y estado `NOT RECOGNIZED`.
-- [ ] Pantalla de resultado
+- [x] Pantalla de resultado
   - [ ] Diferenciar claramente **VALID**, **DISABLED**, **NOT RECOGNIZED** (color, iconos, mensajes).
   - [ ] Mostrar serial y (cuando se use) denominación/serie.
-- [ ] Historial local
+- [x] Historial local
   - [ ] Persistir entradas con Hive (`timestamp`, `serial`, `result`).
   - [ ] Pantalla de **History** que muestre la lista ordenada por fecha (más reciente arriba).
 - [ ] Ajustes finales

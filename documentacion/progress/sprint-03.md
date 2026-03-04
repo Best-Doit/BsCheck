@@ -9,15 +9,15 @@ Implementar el **flujo de escaneo con cámara + OCR** para obtener el número de
 
 ## Alcance
 
-- [ ] Configuración de permisos y cámara
+- [x] Configuración de permisos y cámara
   - [ ] Añadir permisos de cámara en `AndroidManifest.xml`.
   - [ ] Configurar plugin `camera` para vista previa en pantalla.
-- [ ] Pipeline OCR
+- [x] Pipeline OCR
   - [ ] Integrar `google_mlkit_text_recognition`.
   - [ ] Implementar extracción de texto desde fotogramas de la cámara.
   - [ ] Aplicar regex `[0-9]{7,9}` para filtrar candidatos.
   - [ ] Estrategia simple para elegir el mejor candidato (p.ej. más largo, posición en overlay).
-- [ ] Integración con validación
+- [x] Integración con validación
   - [ ] Enviar el serial reconocido al `ValidateSerialUseCase`.
   - [ ] Mostrar el resultado en una pantalla de **Resultado**.
 
