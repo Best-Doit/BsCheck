@@ -42,8 +42,9 @@
 
 Más detalles funcionales están documentados en:
 
-- `PRD-BsCheck.md`
-- `documentacion/planning/MVP-Requirements.md`
+- `documentacion/planning/` (visión de producto, alcance MVP, requisitos).
+- `documentacion/development/` (arquitectura técnica, estructura y modelo de datos).
+- `documentacion/design/` (UI del MVP).
 - `documentacion/progress/` (historial de sprints y avances).
 
 ---
@@ -252,5 +253,5 @@ Como proyecto open source, se aceptan mejoras y correcciones:
   - Nuevas reglas de series (manteniendo formato JSON).
   - Optimizaciones de performance o arquitectura.
 
-Por favor, revisa el PRD (`PRD-BsCheck.md`) y el documento de requisitos (`documentacion/planning/MVP-Requirements.md`) antes de proponer cambios que afecten al comportamiento principal.
+Por favor, revisa la documentación en `documentacion/` (especialmente `planning/` y `development/`) antes de proponer cambios que afecten al comportamiento principal.
 

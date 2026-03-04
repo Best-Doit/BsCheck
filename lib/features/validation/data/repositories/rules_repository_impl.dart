@@ -24,7 +24,7 @@ class RulesRepositoryImpl implements RulesRepository {
     required int denomination,
     required String series,
   }) {
-    final cleaned = rawSerial.replaceAll(RegExp(r'\\D'), '');
+    final cleaned = rawSerial.replaceAll(RegExp(r'\D'), '');
     if (cleaned.length < 7 || cleaned.length > 9) {
       return null;
     }
@@ -63,7 +63,8 @@ class RulesRepositoryImpl implements RulesRepository {
     final filtered = rules
         .where(
           (r) =>
-              r.denomination == serial.denomination && r.series == serial.series,
+              r.denomination == serial.denomination &&
+              r.series == serial.series,
         )
         .toList();
 
@@ -105,4 +106,3 @@ class RulesRepositoryImpl implements RulesRepository {
     return false;
   }
 }
-

@@ -21,6 +21,7 @@ class _ScanPageState extends ConsumerState<ScanPage> {
   CameraController? _controller;
   bool _isBusy = false;
   String? _error;
+  int _denomination = 10;
   late final TextRecognizer _textRecognizer;
 
   @override
@@ -106,7 +107,7 @@ class _ScanPageState extends ConsumerState<ScanPage> {
         final history = HistoryEntry(
           timestamp: DateTime.now(),
           serial: result.serial,
-          denomination: 10,
+          denomination: _denomination,
           series: 'B',
           resultType: HistoryResultType.notRecognized,
         );
@@ -116,7 +117,7 @@ class _ScanPageState extends ConsumerState<ScanPage> {
           MaterialPageRoute<void>(
             builder: (_) => ResultPage(
               result: result,
-              denomination: 10,
+              denomination: _denomination,
               series: 'B',
             ),
           ),
@@ -125,16 +126,14 @@ class _ScanPageState extends ConsumerState<ScanPage> {
         final useCase = ref.read(validateSerialUseCaseProvider);
         final validation = await useCase(
           rawSerial: candidate,
-          // MVP: el usuario elegirá el corte en una versión futura;
-          // por ahora se asume 10 Bs como valor por defecto.
-          denomination: 10,
+          denomination: _denomination,
           series: 'B',
         );
 
         final history = HistoryEntry(
           timestamp: DateTime.now(),
           serial: validation.serial,
-          denomination: 10,
+          denomination: _denomination,
           series: 'B',
           resultType: switch (validation.status) {
             ValidationStatus.disabled => HistoryResultType.disabled,
@@ -149,7 +148,7 @@ class _ScanPageState extends ConsumerState<ScanPage> {
           MaterialPageRoute<void>(
             builder: (_) => ResultPage(
               result: validation,
-              denomination: 10,
+              denomination: _denomination,
               series: 'B',
             ),
           ),
@@ -174,11 +173,27 @@ class _ScanPageState extends ConsumerState<ScanPage> {
     final controller = _controller;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Escanear billete'),
-      ),
+      appBar: AppBar(title: const Text('Escanear billete')),
       body: Column(
         children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+            child: SegmentedButton<int>(
+              segments: const [
+                ButtonSegment(value: 10, label: Text('10 Bs')),
+                ButtonSegment(value: 20, label: Text('20 Bs')),
+                ButtonSegment(value: 50, label: Text('50 Bs')),
+              ],
+              selected: {_denomination},
+              onSelectionChanged: _isBusy
+                  ? null
+                  : (values) {
+                      setState(() {
+                        _denomination = values.first;
+                      });
+                    },
+            ),
+          ),
           Expanded(
             child: Padding(
               padding: const EdgeInsets.all(16),
@@ -202,10 +217,10 @@ class _ScanPageState extends ConsumerState<ScanPage> {
                                 gradient: LinearGradient(
                                   begin: Alignment.bottomCenter,
                                   end: Alignment.topCenter,
-                          colors: [
-                            const Color(0x99000000),
-                            const Color(0x00000000),
-                          ],
+                                  colors: [
+                                    const Color(0x99000000),
+                                    const Color(0x00000000),
+                                  ],
                                 ),
                               ),
                             ),
@@ -266,4 +281,3 @@ class _ScanPageState extends ConsumerState<ScanPage> {
     );
   }
 }
-
