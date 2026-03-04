@@ -6,15 +6,18 @@
 // tree, read text, and verify that the values of widget properties are correct.
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:bscheck/main.dart';
 
 void main() {
   testWidgets('App loads home screen', (WidgetTester tester) async {
-    await tester.pumpWidget(const BsCheckApp(seenOnboarding: true));
+    await tester.pumpWidget(
+      const ProviderScope(child: BsCheckApp(seenOnboarding: true)),
+    );
 
     expect(find.text('BsCheck'), findsOneWidget);
     expect(find.text('Escanear billete'), findsOneWidget);
-    expect(find.text('Ingresar serie'), findsOneWidget);
+    expect(find.text('Manual'), findsWidgets);
   });
 }

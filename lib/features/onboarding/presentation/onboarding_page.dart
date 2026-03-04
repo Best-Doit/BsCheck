@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:hive/hive.dart';
 
-import '../../validation/presentation/home_page.dart';
+import '../../navigation/presentation/main_shell_page.dart';
 
 class OnboardingPage extends StatefulWidget {
   const OnboardingPage({super.key});
@@ -15,6 +15,28 @@ class _OnboardingPageState extends State<OnboardingPage> {
   int _currentPage = 0;
   bool _isFinishing = false;
 
+  static const _pages = [
+    _OnboardingData(
+      icon: Icons.wifi_off_rounded,
+      title: '100% sin conexión',
+      description:
+          'Verifica billetes bolivianos en cualquier lugar, sin internet. Ideal para mercados, tiendas y uso en calle.',
+    ),
+    _OnboardingData(
+      icon: Icons.document_scanner_rounded,
+      title: 'Escanea o escribe',
+      description:
+          'Usa la cámara para leer la serie del billete automáticamente con OCR, o ingrésala a mano en segundos.',
+    ),
+    _OnboardingData(
+      icon: Icons.shield_rounded,
+      title: 'Datos públicos',
+      description:
+          'BsCheck NO es oficial del Banco Central de Bolivia. Es un proyecto comunitario de Best-Doit basado en información pública.',
+      isLast: true,
+    ),
+  ];
+
   @override
   void dispose() {
     _pageController.dispose();
@@ -23,27 +45,25 @@ class _OnboardingPageState extends State<OnboardingPage> {
 
   Future<void> _finishOnboarding() async {
     if (_isFinishing) return;
-    setState(() {
-      _isFinishing = true;
-    });
+    setState(() => _isFinishing = true);
 
     final box = await Hive.openBox('bscheck_prefs');
     await box.put('seen_onboarding', true);
 
     if (!mounted) return;
     Navigator.of(context).pushReplacement(
-      MaterialPageRoute<void>(builder: (_) => const HomePage()),
+      MaterialPageRoute<void>(builder: (_) => const MainShellPage()),
     );
   }
 
   void _nextPage() {
     if (_isFinishing) return;
-    if (_currentPage == 2) {
+    if (_currentPage == _pages.length - 1) {
       _finishOnboarding();
     } else {
       _pageController.nextPage(
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeOut,
+        duration: const Duration(milliseconds: 350),
+        curve: Curves.easeInOut,
       );
     }
   }
@@ -51,97 +71,74 @@ class _OnboardingPageState extends State<OnboardingPage> {
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
-    final pages = [
-      _OnboardingScreen(
-        icon: Icons.offline_bolt_rounded,
-        title: 'Verificación offline',
-        description:
-            'BsCheck valida billetes bolivianos sin conexión a internet, ideal para mercados, comercios y ventas en calle.',
-      ),
-      _OnboardingScreen(
-        icon: Icons.document_scanner_rounded,
-        title: 'Escanéa o ingresa la serie',
-        description:
-            'Puedes usar la cámara con OCR para leer la serie del billete o escribirla manualmente en segundos.',
-      ),
-      _OnboardingScreen(
-        icon: Icons.verified_user_rounded,
-        title: 'Proyecto de Best-Doit',
-        description:
-            'Esta app NO es oficial del Banco Central de Bolivia. Es una contribución abierta de la comunidad (Best-Doit).',
-        showSocial: true,
-      ),
-    ];
+    final safePadding = MediaQuery.of(context).padding;
+    final isLast = _currentPage == _pages.length - 1;
 
     return Scaffold(
-      body: Stack(
+      backgroundColor: const Color(0xFFF7F9FB),
+      body: Column(
         children: [
-          Positioned.fill(
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [colors.primaryContainer, const Color(0xFFF4FAF6)],
-                ),
-              ),
+          // ─── Ilustración + contenido ─────────────────────────
+          Expanded(
+            child: PageView.builder(
+              controller: _pageController,
+              itemCount: _pages.length,
+              onPageChanged: (i) => setState(() => _currentPage = i),
+              itemBuilder: (context, index) =>
+                  _OnboardingScreen(data: _pages[index]),
             ),
           ),
-          SafeArea(
+
+          // ─── Controles ───────────────────────────────────────
+          Padding(
+            padding: EdgeInsets.fromLTRB(
+              24,
+              0,
+              24,
+              safePadding.bottom + 24,
+            ),
             child: Column(
               children: [
-                Align(
-                  alignment: Alignment.topRight,
-                  child: TextButton(
-                    onPressed: _isFinishing ? null : _finishOnboarding,
-                    child: const Text('Saltar'),
-                  ),
-                ),
-                Expanded(
-                  child: PageView.builder(
-                    controller: _pageController,
-                    itemCount: pages.length,
-                    onPageChanged: (index) {
-                      setState(() {
-                        _currentPage = index;
-                      });
-                    },
-                    itemBuilder: (context, index) => pages[index],
-                  ),
-                ),
-                const SizedBox(height: 16),
+                // Indicadores de página
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: List.generate(
-                    pages.length,
+                    _pages.length,
                     (index) => AnimatedContainer(
-                      duration: const Duration(milliseconds: 220),
+                      duration: const Duration(milliseconds: 280),
+                      curve: Curves.easeOut,
                       margin: const EdgeInsets.symmetric(horizontal: 4),
-                      width: _currentPage == index ? 18 : 8,
+                      width: _currentPage == index ? 24 : 8,
                       height: 8,
                       decoration: BoxDecoration(
                         color: _currentPage == index
                             ? colors.primary
-                            : colors.secondaryContainer,
+                            : colors.outlineVariant,
                         borderRadius: BorderRadius.circular(4),
                       ),
                     ),
                   ),
                 ),
-                const SizedBox(height: 16),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
-                  child: FilledButton(
-                    onPressed: _isFinishing ? null : _nextPage,
-                    child: Text(
-                      _isFinishing
-                          ? 'Cargando...'
-                          : (_currentPage == pages.length - 1
-                                ? 'Empezar'
-                                : 'Siguiente'),
-                    ),
+                const SizedBox(height: 24),
+                // Botón principal
+                FilledButton(
+                  onPressed: _isFinishing ? null : _nextPage,
+                  child: Text(
+                    _isFinishing
+                        ? 'Cargando...'
+                        : (isLast ? 'Comenzar' : 'Siguiente'),
                   ),
                 ),
+                const SizedBox(height: 8),
+                // Saltar
+                if (!isLast)
+                  SizedBox(
+                    width: double.infinity,
+                    child: TextButton(
+                      onPressed: _isFinishing ? null : _finishOnboarding,
+                      child: const Text('Omitir'),
+                    ),
+                  ),
               ],
             ),
           ),
@@ -151,56 +148,103 @@ class _OnboardingPageState extends State<OnboardingPage> {
   }
 }
 
-class _OnboardingScreen extends StatelessWidget {
-  const _OnboardingScreen({
+// Datos de cada slide
+class _OnboardingData {
+  const _OnboardingData({
     required this.icon,
     required this.title,
     required this.description,
-    this.showSocial = false,
+    this.isLast = false,
   });
 
   final IconData icon;
   final String title;
   final String description;
-  final bool showSocial;
+  final bool isLast;
+}
+
+class _OnboardingScreen extends StatelessWidget {
+  const _OnboardingScreen({required this.data});
+
+  final _OnboardingData data;
 
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+
     return Padding(
-      padding: const EdgeInsets.all(32),
+      padding: const EdgeInsets.fromLTRB(32, 48, 32, 24),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          // Icono hero
           Container(
-            width: 106,
-            height: 106,
+            width: 120,
+            height: 120,
             decoration: BoxDecoration(
-              color: Colors.white,
-              shape: BoxShape.circle,
-              border: Border.all(color: colors.primary.withValues(alpha: 0.25)),
+              gradient: const LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [Color(0xFF1B5E20), Color(0xFF4CAF50)],
+              ),
+              borderRadius: BorderRadius.circular(36),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFF1B5E20).withValues(alpha: 0.3),
+                  blurRadius: 24,
+                  offset: const Offset(0, 10),
+                ),
+              ],
             ),
-            child: Icon(icon, size: 56, color: colors.primary),
+            child: Icon(data.icon, size: 60, color: Colors.white),
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 40),
           Text(
-            title,
+            data.title,
             textAlign: TextAlign.center,
-            style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w800),
+            style: textTheme.headlineSmall?.copyWith(
+              fontWeight: FontWeight.w800,
+            ),
           ),
           const SizedBox(height: 16),
           Text(
-            description,
+            data.description,
             textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 15, color: colors.onSurfaceVariant),
+            style: textTheme.bodyLarge?.copyWith(
+              color: colors.onSurfaceVariant,
+              height: 1.6,
+            ),
           ),
-          if (showSocial) ...[
-            const SizedBox(height: 32),
-            Text(
-              'Sígueme en TikTok para más proyectos:',
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 14, color: colors.secondary),
+          if (data.isLast) ...[
+            const SizedBox(height: 28),
+            Container(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 14,
+                vertical: 10,
+              ),
+              decoration: BoxDecoration(
+                color: colors.primaryContainer.withValues(alpha: 0.5),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.favorite_rounded,
+                    size: 14,
+                    color: colors.primary,
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    'Hecho con amor por Best-Doit',
+                    style: textTheme.bodySmall?.copyWith(
+                      color: colors.primary,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ],
         ],
