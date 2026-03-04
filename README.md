@@ -153,7 +153,7 @@ Cuando se publique una nueva versión:
 ### 2. Clonar el repositorio
 
 ```bash
-git clone https://github.com/tu-usuario/bscheck.git
+git clone https://github.com/Best-Doit/bscheck.git
 cd bscheck
 ```
 
@@ -254,4 +254,17 @@ Como proyecto open source, se aceptan mejoras y correcciones:
   - Optimizaciones de performance o arquitectura.
 
 Por favor, revisa la documentación en `documentacion/` (especialmente `planning/` y `development/`) antes de proponer cambios que afecten al comportamiento principal.
+
+---
+
+## Licencia y marca
+
+- El código de BsCheck se publica bajo la licencia **Apache 2.0** (ver archivo `LICENSE`).
+- Están permitidos los forks y modificaciones respetando la licencia.
+- **No está permitido** usar el nombre **“BsCheck”**, el logo original o presentarse como la app oficial de Best-Doit o del Banco Central de Bolivia en apps derivadas, salvo autorización expresa.
+
+Si publicas un fork:
+
+- Cambia **nombre**, **icono** y **descripciones** para dejar claro que es un proyecto derivado.
+- Incluye crédito a este repositorio original (`Best-Doit/BsCheck` en GitHub).
 

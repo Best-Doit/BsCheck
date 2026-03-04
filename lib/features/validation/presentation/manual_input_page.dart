@@ -90,60 +90,108 @@ class _ManualInputPageState extends ConsumerState<ManualInputPage> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Ingresar serie'),
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            const Text(
-              'Selecciona el corte y escribe la serie del billete.',
-              style: TextStyle(fontSize: 16),
-            ),
-            const SizedBox(height: 16),
-            SegmentedButton<int>(
-              segments: const [
-                ButtonSegment(value: 10, label: Text('10 Bs')),
-                ButtonSegment(value: 20, label: Text('20 Bs')),
-                ButtonSegment(value: 50, label: Text('50 Bs')),
-              ],
-              selected: {_denomination},
-              onSelectionChanged: (values) {
-                setState(() {
-                  _denomination = values.first;
-                });
-              },
-            ),
-            const SizedBox(height: 24),
-            TextField(
-              controller: _controller,
-              keyboardType: TextInputType.number,
-              maxLength: 9,
-              decoration: InputDecoration(
-                labelText: 'Serie',
-                hintText: 'Ej: 87280145',
-                errorText: _errorText,
-                border: const OutlineInputBorder(),
+      appBar: AppBar(title: const Text('Ingreso Manual')),
+      body: Stack(
+        children: [
+          Positioned.fill(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [colors.primaryContainer, const Color(0xFFF4FAF6)],
+                ),
               ),
             ),
-            const SizedBox(height: 24),
-            FilledButton(
-              onPressed: _isLoading ? null : _onValidatePressed,
-              child: _isLoading
-                  ? const SizedBox(
-                      height: 20,
-                      width: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Text('Validar'),
+          ),
+          SingleChildScrollView(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const Text(
+                  'Selecciona el corte y escribe la serie del billete.',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+                ),
+                const SizedBox(height: 14),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    ChoiceChip(
+                      label: const Text('10 Bs'),
+                      selected: _denomination == 10,
+                      onSelected: (selected) {
+                        if (!selected) return;
+                        setState(() => _denomination = 10);
+                      },
+                    ),
+                    ChoiceChip(
+                      label: const Text('20 Bs'),
+                      selected: _denomination == 20,
+                      onSelected: (selected) {
+                        if (!selected) return;
+                        setState(() => _denomination = 20);
+                      },
+                    ),
+                    ChoiceChip(
+                      label: const Text('50 Bs'),
+                      selected: _denomination == 50,
+                      onSelected: (selected) {
+                        if (!selected) return;
+                        setState(() => _denomination = 50);
+                      },
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        TextField(
+                          controller: _controller,
+                          keyboardType: TextInputType.number,
+                          maxLength: 9,
+                          decoration: InputDecoration(
+                            labelText: 'Serie del billete',
+                            hintText: 'Ej: 87280145',
+                            errorText: _errorText,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          'Usa solo dígitos (7 a 9 números).',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: colors.onSurfaceVariant,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                FilledButton.icon(
+                  onPressed: _isLoading ? null : _onValidatePressed,
+                  icon: _isLoading
+                      ? const SizedBox(
+                          height: 18,
+                          width: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.check_circle_rounded),
+                  label: Text(_isLoading ? 'Validando...' : 'Validar Billete'),
+                ),
+              ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
 }
-

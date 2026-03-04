@@ -11,7 +11,7 @@ import 'package:bscheck/main.dart';
 
 void main() {
   testWidgets('App loads home screen', (WidgetTester tester) async {
-    await tester.pumpWidget(const BsCheckApp());
+    await tester.pumpWidget(const BsCheckApp(seenOnboarding: true));
 
     expect(find.text('BsCheck'), findsOneWidget);
     expect(find.text('Escanear billete'), findsOneWidget);

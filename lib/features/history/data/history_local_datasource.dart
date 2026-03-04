@@ -48,16 +48,38 @@ class HistoryLocalDataSourceImpl implements HistoryLocalDataSource {
     final entries = <HistoryEntry>[];
 
     for (final data in box.values) {
+      final timestampRaw = data['timestamp'];
+      final serialRaw = data['serial'];
+      final denominationRaw = data['denomination'];
+      final seriesRaw = data['series'];
+      final resultTypeRaw = data['resultType'];
+
+      if (timestampRaw is! String ||
+          serialRaw is! String ||
+          seriesRaw is! String) {
+        continue;
+      }
+
+      final timestamp = DateTime.tryParse(timestampRaw);
+      final denomination = _toInt(denominationRaw);
+      if (timestamp == null || denomination == null) {
+        continue;
+      }
+
+      final resultType = resultTypeRaw is String
+          ? HistoryResultType.values.firstWhere(
+              (e) => e.name == resultTypeRaw,
+              orElse: () => HistoryResultType.notRecognized,
+            )
+          : HistoryResultType.notRecognized;
+
       entries.add(
         HistoryEntry(
-          timestamp: DateTime.parse(data['timestamp'] as String),
-          serial: data['serial'] as String,
-          denomination: data['denomination'] as int,
-          series: data['series'] as String,
-          resultType: HistoryResultType.values.firstWhere(
-            (e) => e.name == data['resultType'],
-            orElse: () => HistoryResultType.notRecognized,
-          ),
+          timestamp: timestamp,
+          serial: serialRaw,
+          denomination: denomination,
+          series: seriesRaw,
+          resultType: resultType,
         ),
       );
     }
@@ -65,5 +87,11 @@ class HistoryLocalDataSourceImpl implements HistoryLocalDataSource {
     entries.sort((a, b) => b.timestamp.compareTo(a.timestamp));
     return entries;
   }
-}
 
+  int? _toInt(dynamic value) {
+    if (value is int) return value;
+    if (value is num) return value.toInt();
+    if (value is String) return int.tryParse(value);
+    return null;
+  }
+}

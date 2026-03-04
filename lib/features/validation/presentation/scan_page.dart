@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
@@ -79,25 +80,12 @@ class _ScanPageState extends ConsumerState<ScanPage> {
       _error = null;
     });
 
+    XFile? file;
     try {
-      final file = await controller.takePicture();
+      file = await controller.takePicture();
       final inputImage = InputImage.fromFilePath(file.path);
       final recognizedText = await _textRecognizer.processImage(inputImage);
-
-      final regex = RegExp(r'[0-9]{7,9}');
-      String? candidate;
-
-      for (final block in recognizedText.blocks) {
-        final text = block.text.replaceAll(RegExp(r'[^0-9]'), ' ');
-        final matches = regex.allMatches(text);
-        for (final m in matches) {
-          final value = m.group(0);
-          if (value == null) continue;
-          if (candidate == null || value.length > candidate.length) {
-            candidate = value;
-          }
-        }
-      }
+      final candidate = _extractSerialCandidate(recognizedText);
 
       if (candidate == null) {
         final result = ValidationResult(
@@ -160,6 +148,11 @@ class _ScanPageState extends ConsumerState<ScanPage> {
         _error = 'Error al procesar la imagen.';
       });
     } finally {
+      if (file != null) {
+        try {
+          await File(file.path).delete();
+        } catch (_) {}
+      }
       if (mounted) {
         setState(() {
           _isBusy = false;
@@ -168,113 +161,219 @@ class _ScanPageState extends ConsumerState<ScanPage> {
     }
   }
 
+  String? _extractSerialCandidate(RecognizedText recognizedText) {
+    final regex = RegExp(r'[0-9]{7,9}');
+    final occurrences = <String, int>{};
+    final firstSeenAt = <String, int>{};
+    var index = 0;
+
+    for (final block in recognizedText.blocks) {
+      final text = block.text.replaceAll(RegExp(r'[^0-9]'), ' ');
+      final matches = regex.allMatches(text);
+      for (final match in matches) {
+        final value = match.group(0);
+        if (value == null) continue;
+        occurrences[value] = (occurrences[value] ?? 0) + 1;
+        firstSeenAt.putIfAbsent(value, () => index);
+        index++;
+      }
+    }
+
+    if (occurrences.isEmpty) {
+      return null;
+    }
+
+    final candidates = occurrences.keys.toList()
+      ..sort((a, b) {
+        final byFrequency = occurrences[b]!.compareTo(occurrences[a]!);
+        if (byFrequency != 0) return byFrequency;
+
+        final byLength = _lengthPenalty(
+          a.length,
+        ).compareTo(_lengthPenalty(b.length));
+        if (byLength != 0) return byLength;
+
+        return firstSeenAt[a]!.compareTo(firstSeenAt[b]!);
+      });
+
+    return candidates.first;
+  }
+
+  int _lengthPenalty(int length) {
+    if (length == 8) return 0;
+    if (length == 9) return 1;
+    if (length == 7) return 2;
+    return 3;
+  }
+
   @override
   Widget build(BuildContext context) {
     final controller = _controller;
+    final colors = Theme.of(context).colorScheme;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Escanear billete')),
-      body: Column(
+      appBar: AppBar(title: const Text('Escaneo')),
+      body: Stack(
         children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-            child: SegmentedButton<int>(
-              segments: const [
-                ButtonSegment(value: 10, label: Text('10 Bs')),
-                ButtonSegment(value: 20, label: Text('20 Bs')),
-                ButtonSegment(value: 50, label: Text('50 Bs')),
-              ],
-              selected: {_denomination},
-              onSelectionChanged: _isBusy
-                  ? null
-                  : (values) {
-                      setState(() {
-                        _denomination = values.first;
-                      });
-                    },
+          Positioned.fill(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [colors.primaryContainer, const Color(0xFFF4FAF6)],
+                ),
+              ),
             ),
           ),
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: controller == null || !controller.value.isInitialized
-                  ? Center(
-                      child: _error != null
-                          ? Text(_error!)
-                          : const CircularProgressIndicator(),
-                    )
-                  : ClipRRect(
-                      borderRadius: BorderRadius.circular(16),
-                      child: Stack(
-                        fit: StackFit.expand,
+          Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                child: Row(
+                  children: [
+                    const Text(
+                      'Corte:',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
                         children: [
-                          CameraPreview(controller),
-                          Align(
-                            alignment: Alignment.bottomCenter,
-                            child: Container(
-                              height: 120,
-                              decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                  begin: Alignment.bottomCenter,
-                                  end: Alignment.topCenter,
-                                  colors: [
-                                    const Color(0x99000000),
-                                    const Color(0x00000000),
-                                  ],
-                                ),
-                              ),
-                            ),
+                          ChoiceChip(
+                            label: const Text('10 Bs'),
+                            selected: _denomination == 10,
+                            onSelected: _isBusy
+                                ? null
+                                : (selected) {
+                                    if (!selected) return;
+                                    setState(() => _denomination = 10);
+                                  },
                           ),
-                          Center(
-                            child: Container(
-                              width: 260,
-                              height: 80,
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(
-                                  color: Colors.white,
-                                  width: 2,
-                                ),
-                              ),
-                            ),
+                          ChoiceChip(
+                            label: const Text('20 Bs'),
+                            selected: _denomination == 20,
+                            onSelected: _isBusy
+                                ? null
+                                : (selected) {
+                                    if (!selected) return;
+                                    setState(() => _denomination = 20);
+                                  },
                           ),
-                          const Positioned(
-                            bottom: 24,
-                            left: 16,
-                            right: 16,
-                            child: Text(
-                              'Alinea la serie del billete dentro del recuadro',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 14,
-                              ),
-                            ),
+                          ChoiceChip(
+                            label: const Text('50 Bs'),
+                            selected: _denomination == 50,
+                            onSelected: _isBusy
+                                ? null
+                                : (selected) {
+                                    if (!selected) return;
+                                    setState(() => _denomination = 50);
+                                  },
                           ),
                         ],
                       ),
                     ),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
-            child: FilledButton.icon(
-              onPressed: _isBusy ? null : _captureAndValidate,
-              icon: _isBusy
-                  ? const SizedBox(
-                      width: 18,
-                      height: 18,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                      ),
-                    )
-                  : const Icon(Icons.camera_alt_outlined),
-              label: Text(_isBusy ? 'Procesando...' : 'Capturar y validar'),
-              style: FilledButton.styleFrom(
-                minimumSize: const Size.fromHeight(48),
+                  ],
+                ),
               ),
-            ),
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: controller == null || !controller.value.isInitialized
+                      ? Center(
+                          child: _error != null
+                              ? Text(_error!)
+                              : const CircularProgressIndicator(),
+                        )
+                      : ClipRRect(
+                          borderRadius: BorderRadius.circular(22),
+                          child: Stack(
+                            fit: StackFit.expand,
+                            children: [
+                              CameraPreview(controller),
+                              Align(
+                                alignment: Alignment.bottomCenter,
+                                child: Container(
+                                  height: 150,
+                                  decoration: const BoxDecoration(
+                                    gradient: LinearGradient(
+                                      begin: Alignment.bottomCenter,
+                                      end: Alignment.topCenter,
+                                      colors: [
+                                        Color(0xB3000000),
+                                        Color(0x00000000),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              Center(
+                                child: Container(
+                                  width: 280,
+                                  height: 90,
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(14),
+                                    border: Border.all(
+                                      color: colors.primary.withValues(
+                                        alpha: 0.95,
+                                      ),
+                                      width: 2.6,
+                                    ),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: colors.primary.withValues(
+                                          alpha: 0.28,
+                                        ),
+                                        blurRadius: 22,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                              const Positioned(
+                                bottom: 24,
+                                left: 16,
+                                right: 16,
+                                child: Text(
+                                  'Alinea la serie dentro del recuadro',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+                child: FilledButton.icon(
+                  onPressed: _isBusy ? null : _captureAndValidate,
+                  icon: _isBusy
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              Colors.white,
+                            ),
+                          ),
+                        )
+                      : const Icon(Icons.camera_alt_rounded),
+                  label: Text(_isBusy ? 'Procesando...' : 'Capturar y validar'),
+                ),
+              ),
+            ],
           ),
         ],
       ),
