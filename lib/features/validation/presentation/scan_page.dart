@@ -676,26 +676,31 @@ class _ScannerOverlayFrame extends StatelessWidget {
         final left = (w - frameW) / 2;
         final top = (h - frameH) / 2 - 20;
 
-        return CustomPaint(
-          painter: _OverlayPainter(
-            frameRect: Rect.fromLTWH(left, top, frameW, frameH),
-            borderColor: primaryColor,
-          ),
-          child: Positioned(
-            left: left,
-            top: top + frameH + 16,
-            width: frameW,
-            child: const Text(
-              'Apunta la cámara hacia la serie del billete',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                shadows: [Shadow(blurRadius: 4, color: Colors.black54)],
+        return Stack(
+          fit: StackFit.expand,
+          children: [
+            CustomPaint(
+              painter: _OverlayPainter(
+                frameRect: Rect.fromLTWH(left, top, frameW, frameH),
+                borderColor: primaryColor,
               ),
             ),
-          ),
+            Positioned(
+              left: left,
+              top: top + frameH + 16,
+              width: frameW,
+              child: const Text(
+                'Apunta la cámara hacia la serie del billete',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  shadows: [Shadow(blurRadius: 4, color: Colors.black54)],
+                ),
+              ),
+            ),
+          ],
         );
       },
     );
